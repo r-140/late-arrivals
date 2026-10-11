@@ -1,0 +1,35 @@
+services:
+  postgres:
+    image: postgres:16.8
+    environment: {POSTGRES_USER: lab, POSTGRES_PASSWORD: lab, POSTGRES_DB: lab}
+    volumes: [pg:/var/lib/postgresql/data, ./infra/source.sql:/docker-entrypoint-initdb.d/source.sql:ro]
+    ports: ["127.0.0.1:${SPARK_PG_PORT:-25432}:5432"]
+    healthcheck: {test: [CMD-SHELL, "pg_isready -U lab"], interval: 3s, retries: 30}
+  clickhouse:
+    image: clickhouse/clickhouse-server:25.3
+    environment: {CLICKHOUSE_DB: lab, CLICKHOUSE_USER: lab, CLICKHOUSE_PASSWORD: lab, CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: '1'}
+    volumes: [ch:/var/lib/clickhouse, ./infra/warehouse.sql:/docker-entrypoint-initdb.d/warehouse.sql:ro]
+    ports: ["127.0.0.1:${SPARK_CH_PORT:-28123}:8123"]
+  worker:
+    build: .
+    depends_on: {postgres: {condition: service_healthy}, clickhouse: {condition: service_started}}
+    volumes: [data:/data]
+    ports: ["127.0.0.1:${SPARK_API_PORT:-28090}:8090", "127.0.0.1:${SPARK_UI_PORT:-24040}:4040"]
+  airflow:
+    image: apache/airflow:2.10.5-python3.11
+    command: standalone
+    environment:
+      AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
+      AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'true'
+    volumes: [./airflow/dags:/opt/airflow/dags:ro, airflow:/opt/airflow]
+    ports: ["127.0.0.1:${SPARK_AIRFLOW_PORT:-28080}:8080"]
+  prometheus:
+    image: prom/prometheus:v3.2.1
+    volumes: [./infra/prometheus.yml:/etc/prometheus/prometheus.yml:ro]
+    ports: ["127.0.0.1:${SPARK_PROM_PORT:-29090}:9090"]
+  grafana:
+    image: grafana/grafana:11.6.0
+    environment: {GF_SECURITY_ADMIN_PASSWORD: lab}
+    volumes: [./grafana/provisioning:/etc/grafana/provisioning:ro, ./grafana/dashboards:/var/lib/grafana/dashboards:ro]
+    ports: ["127.0.0.1:${SPARK_GRAFANA_PORT:-23000}:3000"]
+volumes: {pg: {}, ch: {}, data: {}, airflow: {}}

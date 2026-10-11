@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+set -euo pipefail
+cd "$(dirname "$0")/.."
+./bin/lab up
+./bin/lab pause
+./bin/lab test
+for name in late-fact missing-dimension out-of-order late-scd2 etl-delay replay late-delete after-extract after-transform during-load after-publish; do
+  ./bin/lab demo "$name"
+done
+./bin/lab trigger

@@ -30,11 +30,11 @@ env/
 artifacts
 
 # ==================== DBT ====================
-dbt/target/
-dbt/dbt_packages/
-dbt/logs/
-dbt/.user.yml
-dbt/package-lock.yml
+elt-based/dbt/target/
+elt-based/dbt/dbt_packages/
+elt-based/dbt/logs/
+elt-based/dbt/.user.yml
+elt-based/dbt/package-lock.yml
 dbt/*.db
 
 # ==================== DOCKER ====================

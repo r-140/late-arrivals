@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+set -euo pipefail
+cd "$(dirname "$0")/.."
+if [[ -f .env ]]; then set -a; source .env; set +a; fi
+export COMPOSE_PROJECT_NAME=spark-late-arrivals-lab
+case "${1:-help}" in
+ up) docker compose up -d --build
+   for i in $(seq 1 90); do
+     if curl -fsS "http://localhost:${SPARK_API_PORT:-28090}/health" >/dev/null 2>&1; then echo 'Spark ETL worker and stores ready'; exit 0; fi
+     sleep 2
+   done; echo 'Readiness timeout: inspect ./bin/lab logs worker'; exit 1 ;;
+ run|seed|inject|inspect|verify|demo|batches|files|json|delta|test) docker compose exec -T worker python app/cli.py "$@" ;;
+ doctor) docker compose ps; curl -fsS "http://localhost:${SPARK_API_PORT:-28090}/health"; echo ;;
+ sql) shift; docker compose exec -T clickhouse clickhouse-client --user lab --password lab --database lab --query "$*" ;;
+ trigger) docker compose exec -T airflow airflow dags unpause spark_etl; docker compose exec -T airflow airflow dags trigger spark_etl ;;
+ pause) docker compose exec -T airflow airflow dags pause spark_etl ;;
+ password) docker compose exec -T airflow cat /opt/airflow/standalone_admin_password.txt ;;
+ export-data) docker compose cp worker:/data "${2:?destination directory required}" ;;
+ logs) docker compose logs --tail 150 "${2:-worker}" ;;
+ down) docker compose down ;;
+ reset) docker compose down -v; "$0" up ;;
+ *) echo 'Usage: ./bin/lab up|doctor|run [--fail NAME]|seed CASE|inject CASE|demo CASE|verify CASE|inspect CASE|batches|files|json BATCH|delta TABLE|sql QUERY|trigger|pause|password|export-data DIR|logs SERVICE|down|reset' ;;
+esac

@@ -29,3 +29,6 @@ Held buffers are in memory, bounded only by local demo workload. Restart replays
 - https://debezium.io/documentation/reference/3.0/connectors/postgresql.html
 - https://github.com/ClickHouse/dbt-clickhouse
 - https://clickhouse.com/docs/integrations/dbt
+
+## Watermark semantics
+This version has no incremental input watermark. See [WATERMARKS](WATERMARKS.md) for why event/source timestamps cannot safely filter late CDC arrivals and what a production checkpoint requires.

@@ -30,3 +30,6 @@ User log confirms both images build, including the isolated dbt environment chec
 
 ## Empty-source startup fix
 User logs confirm PostgreSQL snapshot completes with zero records and WAL streaming starts, while worker repeatedly exits on UNKNOWN_TOPIC_OR_PART. up now creates lab.public.entities explicitly (idempotently), and worker treats missing topic as a startup wait. Connect readiness requires at least one running source task. Readiness unit tests cover empty tasks, failed tasks and running tasks. Kafka topic creation and end-to-end integration require user-side Docker validation.
+
+## User-side integration evidence (2026-10-11)
+After dependency/port/topic fixes, the user confirmed late-fact success and supplied passing repeated assertions for the other seven scenarios. Airflow dbt_build finished with 5 models, 3 passing tests, return code 0. Both Grafana dashboards were visually confirmed; final revenue 790, unresolved dimensions 0, one replay and one deleted order. This certifies the exercised local paths, not production behavior or the new Spark variant.

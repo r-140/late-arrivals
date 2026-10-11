@@ -1,0 +1,7 @@
+CREATE TABLE IF NOT EXISTS lab.publications(batch_no UInt64,generation String,published_at DateTime64(3,'UTC') DEFAULT now64(3)) ENGINE=MergeTree ORDER BY batch_no;
+CREATE TABLE IF NOT EXISTS lab.order_generations(generation String,order_id String,customer_id String,customer_sk String,amount Decimal(18,2),event_time DateTime64(3,'UTC'),status String,deleted UInt8,customer_known UInt8,segment String) ENGINE=MergeTree ORDER BY (generation,order_id);
+CREATE TABLE IF NOT EXISTS lab.customer_generations(generation String,customer_sk String,customer_id String,name String,segment String,valid_from DateTime64(3,'UTC'),valid_to DateTime64(3,'UTC'),inferred UInt8) ENGINE=MergeTree ORDER BY (generation,customer_sk);
+CREATE TABLE IF NOT EXISTS lab.revenue_generations(generation String,day Date,segment String,revenue Decimal(18,2),orders UInt64) ENGINE=MergeTree ORDER BY (generation,day,segment);
+CREATE VIEW IF NOT EXISTS lab.fact_order AS SELECT * EXCEPT(generation) FROM lab.order_generations WHERE generation=(SELECT argMax(generation,batch_no) FROM lab.publications);
+CREATE VIEW IF NOT EXISTS lab.dim_customer AS SELECT * EXCEPT(generation) FROM lab.customer_generations WHERE generation=(SELECT argMax(generation,batch_no) FROM lab.publications);
+CREATE VIEW IF NOT EXISTS lab.daily_revenue AS SELECT * EXCEPT(generation) FROM lab.revenue_generations WHERE generation=(SELECT argMax(generation,batch_no) FROM lab.publications);

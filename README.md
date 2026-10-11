@@ -1,26 +1,37 @@
-# Late Arrivals Lab
-PostgreSQL → Debezium → Kafka → ClickHouse Bronze → dbt Silver/Gold, orchestrated by Airflow and observed in Grafana.
+# Late Arrivals — Python Labs
+Two independent runnable implementations in ONE IDE project:
 
-Start at [START_HERE](docs/START_HERE.md). Returning after a break? Read [RETURNING_TO_PROJECT](docs/RETURNING_TO_PROJECT.md).
+| | elt-based | spark-based |
+| --- | --- | --- |
+| Processing | Python CDC consumer + dbt SQL | Python / PySpark batch ETL |
+| Source | PostgreSQL → Debezium/Kafka | PostgreSQL change queue polled hourly |
+| Durable inputs | ClickHouse Bronze journal | Immutable JSON batches |
+| Transform storage | ClickHouse Silver/Gold | Delta Lake: Parquet + transaction log |
+| Final analytics | ClickHouse facts/aggregates | ClickHouse dim_customer / fact_order / daily_revenue |
+| Checkpoint | Full-history reads; no input watermark | Durable change membership + batch stage acknowledgment |
+| Orchestration | Airflow medallion, every 5 min | Airflow spark_etl, hourly |
+| Grafana | localhost:13000 | localhost:23000 |
+| Airflow | localhost:18080 | localhost:28080 |
 
-## Eight reproducible cases
-- [late-fact](docs/demos/late-fact.md)
-- [cdc-delay](docs/demos/cdc-delay.md)
-- [missing-dimension](docs/demos/missing-dimension.md)
-- [out-of-order](docs/demos/out-of-order.md)
-- [late-scd2](docs/demos/late-scd2.md)
-- [dbt-delay](docs/demos/dbt-delay.md)
-- [replay](docs/demos/replay.md)
-- [late-delete](docs/demos/late-delete.md)
+Open this root in your IDE; Spark jobs and controllers are Python, dbt models remain SQL. Compose project names, volumes and default host ports are separate. Neither variant resets the other's data.
 
-## Scope and validation
-This is an educational local stack. Full-history Silver and full-key incremental Gold deliberately prioritize correctness over scale. It does not implement production affected-key queues, Kafka transactional exactly-once, or a distributed checkpoint protocol.
+## ELT
+```bash
+cd elt-based
+./bin/lab up
+./bin/lab demo late-fact
+```
+Read [ELT start](elt-based/docs/START_HERE.md), [watermark clarification](elt-based/docs/WATERMARKS.md), [ELT architecture](elt-based/docs/ARCHITECTURE.md).
 
-Versions are pinned baselines, not a claim to use the latest releases. Docker integration has NOT been executed in the artifact creation environment (Docker unavailable). See [VALIDATION](docs/VALIDATION.md) for completed checks and the required local acceptance run.
+## Spark ETL
+```bash
+cd spark-based
+./bin/lab up
+./bin/lab demo late-fact
+```
+Read [Spark start](spark-based/docs/START_HERE.md), [eleven demos](spark-based/docs/DEMO_INDEX.md), [recovery protocol](spark-based/docs/ARCHITECTURE.md), [batch watermarks](spark-based/docs/WATERMARKS.md).
 
-## Key files
-- [Consumer](app/consumer.py), [scenario controller](app/scenarios.py)
-- [Silver state](dbt/models/silver_state.sql), [SCD2](dbt/models/silver_customer_history.sql)
-- [Incremental facts](dbt/models/gold_orders.sql), [aggregates](dbt/models/gold_revenue.sql)
-- [Airflow DAG](airflow/dags/medallion.py)
-- [Architecture](docs/ARCHITECTURE.md), [Grafana guide](docs/GRAFANA.md)
+If your previous ELT checkout already has running volumes, the same elt-based wrapper retains Compose project late-arrivals-lab and therefore reuses those volumes. Do not reseed existing cases; inspect/verify them. The Spark version starts under a different project name.
+
+## Validation
+ELT demo paths, Airflow and Grafana were verified on the user's local Docker environment. Spark implementation includes offline extractor tests and real Spark/Delta integration tests plus acceptance demos, but its Docker stack has not been executed in the artifact creation environment. See the per-variant VALIDATION documents.

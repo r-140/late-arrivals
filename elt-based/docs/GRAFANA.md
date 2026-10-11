@@ -16,3 +16,5 @@ SQL panels query current ClickHouse results. Unknown customer and historical seg
 Dashboard sums accumulate when multiple demos run. Use `./bin/lab inspect NAME` for case-specific evidence. A held CDC update leaves business totals unchanged until release and build. A dbt delay leaves Gold unchanged despite fresh Bronze. During a build tables may briefly be replaced: refresh after completion.
 
 Not yet implemented: per-model SLA alerting, historical correction queue, dbt error-rate timeseries, broker JVM exporter and full Airflow scheduler telemetry. Do not interpret the provided panels as those metrics.
+
+Direct dashboard URLs: http://localhost:13000/d/pipeline-health and http://localhost:13000/d/late-arrivals-corrections. The original late-arrivals UID contained an invalid ampersand; this is corrected. After replacing dashboard JSON, restart only Grafana to reload provisioning.
