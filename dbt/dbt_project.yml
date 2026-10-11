@@ -1,0 +1,11 @@
+name: late_arrivals
+version: '1.0'
+config-version: 2
+profile: lab
+model-paths: [models]
+test-paths: [tests]
+models:
+  late_arrivals:
+    +materialized: table
+    +engine: MergeTree()
+    +order_by: tuple()

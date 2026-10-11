@@ -1,0 +1,20 @@
+{
+  "name": "lab-source",
+  "config": {
+    "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
+    "database.hostname": "postgres",
+    "database.port": "5432",
+    "database.user": "lab",
+    "database.password": "lab",
+    "database.dbname": "lab",
+    "topic.prefix": "lab",
+    "plugin.name": "pgoutput",
+    "slot.name": "lab_slot",
+    "publication.autocreate.mode": "filtered",
+    "table.include.list": "public.entities",
+    "snapshot.mode": "initial",
+    "tombstones.on.delete": "false",
+    "key.converter.schemas.enable": "false",
+    "value.converter.schemas.enable": "false"
+  }
+}

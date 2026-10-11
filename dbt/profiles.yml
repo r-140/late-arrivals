@@ -1,0 +1,12 @@
+lab:
+  target: dev
+  outputs:
+    dev:
+      type: clickhouse
+      host: clickhouse
+      port: 8123
+      user: lab
+      password: lab
+      schema: lab
+      secure: false
+      threads: 1

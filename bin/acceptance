@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+set -euo pipefail
+cd "$(dirname "$0")/.."
+./bin/lab up
+./bin/lab doctor
+for name in late-fact cdc-delay missing-dimension out-of-order late-scd2 dbt-delay replay late-delete; do
+  ./bin/lab demo "$name"
+done
+./bin/lab trigger
+printf 'All eight direct demos passed. Confirm the triggered Airflow run and Grafana panels.\n'
