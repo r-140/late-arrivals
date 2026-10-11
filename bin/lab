@@ -1,18 +1,20 @@
 #!/usr/bin/env bash
 set -euo pipefail
 cd "$(dirname "$0")/.."
+if [[ -f .env ]]; then set -a; source .env; set +a; fi
 export COMPOSE_PROJECT_NAME=late-arrivals-lab
 case "${1:-help}" in
- up) mkdir -p dbt/target dbt/logs; chmod 777 dbt dbt/target dbt/logs control; chmod 666 control/mode; docker compose up -d --build; "$0" register ;;
- register) for i in $(seq 1 90); do
-   if curl -fsS http://localhost:8083/connectors >/dev/null; then
-     python3 -c 'import json; print(json.dumps(json.load(open("infra/connector.json"))["config"]))' | curl -fsS -X PUT -H 'Content-Type: application/json' --data-binary @- http://localhost:8083/connectors/lab-source/config && exit 0
+ up) mkdir -p dbt/target dbt/logs; chmod 777 dbt dbt/target dbt/logs control; chmod 666 control/mode; docker compose up -d --build; "$0" topics; "$0" register ;;
+ topics) for i in $(seq 1 90); do
+   if docker compose exec -T kafka /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic lab.public.entities --partitions 1 --replication-factor 1 >/dev/null 2>&1; then
+     echo 'CDC topic ready: lab.public.entities'; exit 0
    fi
    sleep 2
- done; exit 1 ;;
+ done; echo 'Kafka topic initialization failed; inspect ./bin/lab logs kafka' >&2; exit 1 ;;
+ register) python3 app/readiness.py ;;
  build) docker compose exec -T worker dbt build --project-dir /app/dbt --profiles-dir /app/dbt ;;
  demo|seed|inject|release|inspect|verify) docker compose exec -T worker python app/scenarios.py "$1" "${2:?scenario required}" ;;
- doctor) docker compose ps; curl -fsS http://localhost:8083/connectors/lab-source/status; curl -fsS http://localhost:9101/metrics ;;
+ doctor) docker compose ps; curl -fsS http://localhost:${LAB_CONNECT_PORT:-18083}/connectors/lab-source/status; curl -fsS http://localhost:${LAB_METRICS_PORT:-19101}/metrics ;;
  sql) shift; docker compose exec -T clickhouse clickhouse-client --user lab --password lab --database lab --query "$*" ;;
  trigger) docker compose exec -T airflow airflow dags trigger medallion ;;
  logs) docker compose logs --tail 100 "${2:-worker}" ;;

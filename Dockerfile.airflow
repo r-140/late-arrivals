@@ -1,4 +1,10 @@
 FROM apache/airflow:2.10.5-python3.11
-COPY requirements.txt /tmp/requirements.txt
-RUN pip install --no-cache-dir -r /tmp/requirements.txt apache-airflow==2.10.5
-ENV DBT_PROFILES_DIR=/opt/lab/dbt
+# Keep dbt's dependency tree separate from the preinstalled Airflow runtime.
+USER root
+RUN python -m venv /opt/dbt-venv && chown -R airflow:0 /opt/dbt-venv
+USER airflow
+COPY requirements-dbt.txt /tmp/requirements-dbt.txt
+RUN /opt/dbt-venv/bin/python -m pip install --no-cache-dir -r /tmp/requirements-dbt.txt \
+    && /opt/dbt-venv/bin/python -m pip check \
+    && /opt/dbt-venv/bin/dbt --version
+ENV DBT_PROFILES_DIR=/opt/lab/dbt DBT_SEND_ANONYMOUS_USAGE_STATS=false

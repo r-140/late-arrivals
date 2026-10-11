@@ -1,7 +1,7 @@
 """Insert before committing Kafka offsets. Replay is deliberately safe downstream."""
 import json, time, threading
 from pathlib import Path
-from confluent_kafka import Consumer
+from confluent_kafka import Consumer, KafkaError
 from prometheus_client import start_http_server, Counter, Gauge, Histogram
 from common import ch
 from envelope import normalize
@@ -46,7 +46,12 @@ def insert(msg):
 while True:
     try:
         m=c.poll(1)
-        if m and m.error(): raise RuntimeError(m.error())
+        if m and m.error():
+            if m.error().code() in (KafkaError.UNKNOWN_TOPIC_OR_PART, KafkaError._PARTITION_EOF):
+                print(f'Waiting for source topic: {m.error()}',flush=True)
+                time.sleep(2)
+                continue
+            raise RuntimeError(m.error())
         if m and m.value():
             # Once a hold starts, hold every later record to retain commit safety.
             if mode() in ('hold','reverse') or buffer:

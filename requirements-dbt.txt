@@ -1,0 +1,5 @@
+dbt-clickhouse==1.9.1
+dbt-core==1.9.4
+clickhouse-connect==0.8.15
+dbt-adapters==1.16.3
+dbt-common==1.27.1
